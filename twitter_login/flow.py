@@ -2,7 +2,7 @@ from STPyV8 import JSError
 
 from .castle_token import CastleToken
 from .constants import INIT_FLOW_PAYLOAD
-from .http import CustomSession, build_headers
+from .http import CustomSession
 from .ui_metrics import solve_ui_metrics
 
 
@@ -14,7 +14,7 @@ class LoginFlow:
         self.flow_token = None
         self.subtasks = []
         self.subtask_inputs = {}
-        self.headers = build_headers(extra_headers={
+        self.headers = session.build_headers(extra_headers={
             'Content-Type': 'application/json',
             'x-twitter-active-user': 'yes',
             'x-twitter-client-language': 'en',
@@ -72,7 +72,7 @@ class LoginFlow:
     async def LoginJsInstrumentationSubtask(self):
         subtask = self.get_subtask('LoginJsInstrumentationSubtask')
         js_url = subtask['js_instrumentation']['url']
-        headers = build_headers(authorization=False)
+        headers = self.session.build_headers(authorization=False)
         js_response = await self.session.get(js_url, headers=headers, use_transaction_id=False)
         ui_metrics = js_response.text
         try:
@@ -123,41 +123,18 @@ class LoginFlow:
             }
         }
 
+    def LoginTwoFactorAuthChallenge(self, totp_code):
+        self.subtask_inputs['LoginTwoFactorAuthChallenge'] = {
+            'enter_text': {
+                'text': totp_code,
+                'link': 'next_link',
+                'castle_token': self.castle.create_token()
+            }
+        }
+
     async def sso_init(self):
         await self.session.post(
             'https://api.x.com/1.1/onboarding/sso_init.json',
             json={'provider': 'apple'},
             headers=self.headers
         )
-
-    async def complete(self, user_identifiers, password):
-        await self.init_flow()
-
-        while True:
-            subtask_ids = [i['subtask_id'] for i in self.subtasks]
-
-            if 'LoginJsInstrumentationSubtask' in subtask_ids:
-                await self.LoginJsInstrumentationSubtask()
-                await self.sso_init()
-
-            elif 'LoginEnterUserIdentifierSSO' in subtask_ids:
-                self.LoginEnterUserIdentifierSSO(user_identifiers[0])
-
-            elif 'LoginEnterAlternateIdentifierSubtask' in subtask_ids:
-                if len(user_identifiers) < 2:
-                    raise ValueError('Alternate identifier required.')
-                self.LoginEnterAlternateIdentifierSubtask(user_identifiers[1])
-
-            elif 'LoginEnterPassword' in subtask_ids:
-                self.LoginEnterPassword(password)
-
-            elif 'LoginSuccessSubtask' in subtask_ids:
-                break
-
-            elif 'DenyLoginSubtask' in subtask_ids:
-                raise RuntimeError(str(self.subtasks))
-
-            else:
-                raise ValueError(f'unknown subtasks: {subtask_ids}')
-
-            await self.execute_subtasks()

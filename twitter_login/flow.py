@@ -132,6 +132,15 @@ class LoginFlow:
             }
         }
 
+    def LoginAcid(self, confirmation_code):
+        self.subtask_inputs['LoginAcid'] = {
+            'enter_text': {
+                'link': 'next_link',
+                'text': confirmation_code,
+                'castle_token': self.castle.create_token()
+            }
+        }
+
     async def sso_init(self):
         await self.session.post(
             'https://api.x.com/1.1/onboarding/sso_init.json',

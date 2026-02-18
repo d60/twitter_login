@@ -9,8 +9,12 @@ from .http import CustomSession
 from .transaction_id import ClientTransaction
 
 
-def default_two_factor_auth_callback(user_identifiers):
+async def default_two_factor_auth_callback(user_identifiers):
     return input(f'Enter 2FA code for {user_identifiers[0]}: ')
+
+
+async def default_email_confirm_callback(user_identifiers):
+    return input(f'Enter email confirmation code for {user_identifiers[0]}: ')
 
 
 class Login:
@@ -42,6 +46,7 @@ class Login:
         cookies_file,
         totp_secret = None,
         two_factor_auth_callback = default_two_factor_auth_callback,
+        email_confirm_callback = default_email_confirm_callback,
         castle_fingerprint = None
     ) -> None:
         await self.init()
@@ -78,10 +83,17 @@ class Login:
                     from pyotp import TOTP
                     totp = TOTP(totp_secret).now()
                 elif two_factor_auth_callback:
-                    totp = two_factor_auth_callback(user_identifiers)
+                    totp = await two_factor_auth_callback(user_identifiers)
                 else:
                     ValueError('2FA required but no callback or TOTP secret provided.')
                 flow.LoginTwoFactorAuthChallenge(totp)
+
+            elif 'LoginAcid' in subtask_ids:
+                if email_confirm_callback:
+                    confirmation_code = await email_confirm_callback(user_identifiers)
+                else:
+                    ValueError('Email confirmation required but no callback provided.')
+                flow.LoginAcid(confirmation_code)
 
             elif 'LoginSuccessSubtask' in subtask_ids:
                 break
@@ -90,7 +102,7 @@ class Login:
                 raise RuntimeError(str(flow.subtasks))
 
             else:
-                raise ValueError(f'unknown subtasks: {subtask_ids}')
+                raise ValueError(f'Unknown subtasks: {subtask_ids}')
 
             await flow.execute_subtasks()
 

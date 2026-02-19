@@ -1,25 +1,19 @@
 from STPyV8 import JSError
 
+from .api import API
 from .castle_token import CastleToken
 from .constants import INIT_FLOW_PAYLOAD
-from .http import CustomSession
+from .http import HTTPClient
 from .ui_metrics import solve_ui_metrics
 
 
 class LoginFlow:
-    def __init__(self, session: CustomSession, guest_token, castle: CastleToken):
-        self.session = session
-        self.guest_token = guest_token
-        self.onboarding_url = 'https://api.x.com/1.1/onboarding/task.json'
+    def __init__(self, http: HTTPClient, api: API, castle: CastleToken):
+        self.http = http
+        self.api = api
         self.flow_token = None
         self.subtasks = []
         self.subtask_inputs = {}
-        self.headers = session.build_headers(extra_headers={
-            'Content-Type': 'application/json',
-            'x-twitter-active-user': 'yes',
-            'x-twitter-client-language': 'en',
-            'x-guest-token': self.guest_token
-        })
         self.castle = castle
 
     def get_subtask(self, subtask_id):
@@ -44,11 +38,8 @@ class LoginFlow:
 
     async def init_flow(self):
         data = INIT_FLOW_PAYLOAD
-        response = await self.session.post(
-            self.onboarding_url,
-            params={'flow_name': 'login'},
-            json=data,
-            headers=self.headers
+        response = await self.api.v11.onboarding_task(
+            data, {'flow_name': 'login'}
         )
         self.process_response(response)
 
@@ -61,19 +52,15 @@ class LoginFlow:
             'flow_token': self.flow_token,
             'subtask_inputs': subtask_inputs
         }
-        response = await self.session.post(
-            self.onboarding_url,
-            json=data,
-            headers=self.headers
-        )
+        response = await self.api.v11.onboarding_task(data)
         self.process_response(response)
         self.subtask_inputs.clear()
 
     async def LoginJsInstrumentationSubtask(self):
         subtask = self.get_subtask('LoginJsInstrumentationSubtask')
         js_url = subtask['js_instrumentation']['url']
-        headers = self.session.build_headers(authorization=False)
-        js_response = await self.session.get(js_url, headers=headers, use_transaction_id=False)
+        headers = self.http.build_headers(authorization=False)
+        js_response = await self.http.get(js_url, headers=headers, use_transaction_id=False)
         ui_metrics = js_response.text
         try:
             answer = solve_ui_metrics(ui_metrics)
@@ -142,8 +129,4 @@ class LoginFlow:
         }
 
     async def sso_init(self):
-        await self.session.post(
-            'https://api.x.com/1.1/onboarding/sso_init.json',
-            json={'provider': 'apple'},
-            headers=self.headers
-        )
+        await self.api.v11.onboarding_sso_init('apple')

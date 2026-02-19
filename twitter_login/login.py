@@ -1,62 +1,60 @@
-import json
+import os
 import re
 import time
 import uuid
 
+from .api import API
 from .castle_token import CastleToken
+from .constants import COOKIES_DOMAIN
 from .flow import LoginFlow
-from .http import CustomSession
+from .http import HTTPClient
+from .login_handlers import default_email_confirmation_handler, default_two_fa_handler
 from .transaction_id import ClientTransaction
 
 
-async def default_two_factor_auth_callback(user_identifiers):
-    return input(f'Enter 2FA code for {user_identifiers[0]}: ')
-
-
-async def default_email_confirm_callback(user_identifiers):
-    return input(f'Enter email confirmation code for {user_identifiers[0]}: ')
-
-
-class Login:
+class Client:
     def __init__(self):
-        self.session = CustomSession(impersonate='chrome142')
-        self.guest_token = None
+        self.http = HTTPClient(impersonate='chrome142')
+        self.api = API(self.http)
 
     async def init(self):
-        self.session.cookies.clear()
-        response = await self.session.get(
+        self.http.cookies.clear()
+        response = await self.http.get(
             'https://x.com/i/flow/login',
-            headers=self.session.build_headers(authorization=False)
+            headers=self.http.build_headers(authorization=False)
         )
         html = response.text
         guest_token_match = re.search(r'gt=([0-9]+);', html)
         if not guest_token_match:
             raise ValueError('guest token not found in html.')
-        self.guest_token = guest_token_match.group(1)
-        self.session.cookies.set('gt', self.guest_token, '.x.com')
+        guest_token = guest_token_match.group(1)
+        self.http.cookies.set('gt', guest_token, COOKIES_DOMAIN)
 
-        transaction = ClientTransaction()
-        await transaction.init(self.session, self.session.build_headers(authorization=False))
-        self.session.transaction = transaction
+        client_transaction = ClientTransaction()
+        await client_transaction.init(self.http, self.http.build_headers(authorization=False))
+        self.http.client_transaction = client_transaction
 
     async def login(
         self,
         user_identifiers,
         password,
         cookies_file,
-        totp_secret = None,
-        two_factor_auth_callback = default_two_factor_auth_callback,
-        email_confirm_callback = default_email_confirm_callback,
+        two_fa_handler = default_two_fa_handler,
+        email_confirmation_handler = default_email_confirmation_handler,
         castle_fingerprint = None
     ) -> None:
-        await self.init()
+        if os.path.exists(cookies_file):
+            self.http.load_cookies(cookies_file)
+            # TODO cookies validation
+            return
 
+        await self.init()
         init_time = int(time.time() * 1000) - 15000
         cuid = uuid.uuid4().hex
-        self.session.cookies.set('__cuid', cuid, '.x.com')
+        self.http.cookies.set('__cuid', cuid, COOKIES_DOMAIN)
 
         castle = CastleToken(init_time, cuid, castle_fingerprint)
-        flow = LoginFlow(self.session, self.guest_token, castle)
+        flow = LoginFlow(self.http, self.api, castle)
 
         await flow.init_flow()
 
@@ -79,20 +77,17 @@ class Login:
                 flow.LoginEnterPassword(password)
 
             elif 'LoginTwoFactorAuthChallenge' in subtask_ids:
-                if totp_secret:
-                    from pyotp import TOTP
-                    totp = TOTP(totp_secret).now()
-                elif two_factor_auth_callback:
-                    totp = await two_factor_auth_callback(user_identifiers)
-                else:
-                    ValueError('2FA required but no callback or TOTP secret provided.')
+                try:
+                    totp = two_fa_handler()
+                except Exception as e:
+                    raise RuntimeError('Failed to get 2FA code') from e
                 flow.LoginTwoFactorAuthChallenge(totp)
 
             elif 'LoginAcid' in subtask_ids:
-                if email_confirm_callback:
-                    confirmation_code = await email_confirm_callback(user_identifiers)
-                else:
-                    ValueError('Email confirmation required but no callback provided.')
+                try:
+                    confirmation_code = email_confirmation_handler()
+                except Exception as e:
+                    raise RuntimeError('Failed to get email confirmation code') from e
                 flow.LoginAcid(confirmation_code)
 
             elif 'LoginSuccessSubtask' in subtask_ids:
@@ -106,6 +101,4 @@ class Login:
 
             await flow.execute_subtasks()
 
-        cookies = self.session.cookies.get_dict('.x.com')
-        with open(cookies_file, 'w', encoding='utf-8') as f:
-            json.dump(cookies, f, ensure_ascii=False, indent=4)
+        self.http.save_cookies(cookies_file)

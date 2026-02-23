@@ -35,3 +35,10 @@ class V11:
             json=data,
             headers=headers
         )
+
+    async def user_state(self):
+        headers = self.http.build_headers()
+        return await self.http.get(
+            'https://api.x.com/help-center/forms/api/prod/user_state.json',
+            headers=headers
+        )

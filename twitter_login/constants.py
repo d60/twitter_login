@@ -1,4 +1,4 @@
-INIT_FLOW_PAYLOAD = {
+START_FLOW_PAYLOAD = {
     "input_flow_data": {
         "flow_context": {
             "debug_overrides": {},

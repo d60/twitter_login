@@ -1,5 +1,7 @@
 /*.py
-!/config.py
+# !/config.py
 # !/main.py
 /*.json
 __pycache__
+/.vscode
+.cache

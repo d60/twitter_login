@@ -1,25 +1,20 @@
 import json
+from typing import Any
 from urllib.parse import urlparse
 
 import curl_cffi
-from curl_cffi import Headers, Response
+from curl_cffi import Response
 
 from .constants import AUTHORIZATION, COOKIES_DOMAIN, DEFAULT_HEADERS
-from .ratelimits import Ratelimit
+from .errors import HTTPError
+from .ratelimits import RatelimitsManager
 from .transaction_id import ClientTransaction
-
-
-class HTTPError(Exception):
-    def __init__(self, status_code, message):
-        self.status_code = status_code
-        self.message = message
-        super().__init__(f'{status_code}: {message}')
 
 
 class HTTPClient(curl_cffi.AsyncSession):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ratelimits = {}
+        self.ratelimits_manager = RatelimitsManager()
         self.client_transaction: ClientTransaction | None = None
 
     async def request(
@@ -46,22 +41,8 @@ class HTTPClient(curl_cffi.AsyncSession):
                 message = ''
             raise HTTPError(status_code, message)
 
-        self.update_ratelimit(url, response.headers)
+        self.ratelimits_manager.update(url, response.headers)
         return response
-
-    def update_ratelimit(self, endpoint: str, response_headers: Headers):
-        args = (
-            response_headers.get('x-rate-limit-limit'),
-            response_headers.get('x-rate-limit-remaining'),
-            response_headers.get('x-rate-limit-reset')
-        )
-        if not all(args):
-            return
-        try:
-            args = [int(v) for v in args]
-        except (TypeError, ValueError):
-            return
-        self.ratelimits[endpoint] = Ratelimit(*args)
 
     def build_headers(self, *, authorization = True, csrf_token = True, extra_headers = None, json = False):
         headers = DEFAULT_HEADERS.copy()
@@ -74,7 +55,7 @@ class HTTPClient(curl_cffi.AsyncSession):
         if extra_headers:
             headers |= extra_headers
         if json:
-            headers['Content-Type'] = 'application/json'
+            headers['content-type'] = 'application/json'
         return headers
 
     @property
@@ -85,15 +66,11 @@ class HTTPClient(curl_cffi.AsyncSession):
     def guest_token(self):
         return self.cookies.get('gt', domain=COOKIES_DOMAIN)
 
-    def save_cookies(self, path):
-        cookies = self.cookies.get_dict(COOKIES_DOMAIN)
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(cookies, f)
 
-    def load_cookies(self, path):
-        with open(path, encoding='utf-8') as f:
-            cookies = json.load(f)
-        if not isinstance(cookies, dict):
-            raise ValueError('Cookies format error')
-        for k, v in cookies.items():
-            self.cookies.set(k, v, COOKIES_DOMAIN)
+def parse_json_response(response: Response) -> dict | list | Any:
+    try:
+        return response.json()
+    except json.JSONDecodeError as e:
+        raise RuntimeError(
+            f'Invalid JSON response. Status: {response.status_code}, Body: {response.text[:200]}'
+        ) from e

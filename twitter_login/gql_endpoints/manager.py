@@ -2,6 +2,7 @@ import asyncio
 from logging import getLogger
 from typing import AsyncGenerator
 
+from ..headers import HeadersConfig
 from ..http import HTTPClient
 from ..utils import optional_chaining
 from .cache import GQLCache
@@ -14,6 +15,9 @@ logger = getLogger(__name__)
 
 
 class GQLEndpointsManager:
+    """
+    A class for updating GQL endpoints antomatically.
+    """
     def __init__(self, http: HTTPClient) -> None:
         """
         required_endpoints_mapping : {'filename1': ['OperationName1', 'OperationName2', ...], ...}
@@ -32,13 +36,10 @@ class GQLEndpointsManager:
         """Loads cached data or build-time data if no cache is exists."""
         self.state.hash_mapping = self.cache.get_cached_hash_mapping() or BUILDTIME_HASH_MAPPING
         self.state.update_endpoints(self.cache.get_cached_endpoints() or BUILDTIME_ENDPOINTS)
-        self.state.update_feature_switches(
-            self.cache.get_cached_feature_switches() or BUILDTIME_DEFAULT_FEATURE_SWITCHES
-        )
+        self.state.update_feature_switches(self.cache.get_cached_feature_switches() or BUILDTIME_DEFAULT_FEATURE_SWITCHES)
 
     async def load_html(self):
-        headers = self.http.build_headers(authorization=False, csrf_token=False)
-        response = await self.http.get('https://x.com/home', headers=headers)
+        response = await self.http.get('https://x.com/home', HeadersConfig.initial_html())
         html = response.text
         self.extract_html(html)
         logger.info('Data extracted and updated from html.')
@@ -78,10 +79,12 @@ class GQLEndpointsManager:
         Yields filename and jsfile content.
         """
         sem = asyncio.Semaphore(10)
+        headers_config = HeadersConfig.general_js()
+
         async def fetch_file(filename, hash):
             url = self.build_file_url(filename, hash)
             async with sem:
-                response = await self.http.get(url)
+                response = await self.http.get(url, headers_config)
                 return filename, response.text
         files_data = self.get_update_required_files()
         tasks = [asyncio.create_task(fetch_file(f, h)) for f, h in files_data]
@@ -108,7 +111,8 @@ class GQLEndpointsManager:
         results = []
         async for filename, js in self.update_required_js_aiter():
             results += js_file_extract_endpoints(
-                js, set(self.required_endpoints_mapping[filename]), self.handle_missing_endpoint
+                js, set(
+                    self.required_endpoints_mapping[filename]), self.handle_missing_endpoint
             )
             logger.info(f'Updated {len(results)} from {filename}')
         return results

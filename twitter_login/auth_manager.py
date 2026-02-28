@@ -5,11 +5,14 @@ import time
 import uuid
 from logging import getLogger
 
+from curl_cffi import AsyncSession
+
 from .api import API
 from .castle_token import CastleToken
 from .constants import COOKIES_DOMAIN
 from .enums import SubtaskID
 from .errors import DenyLoginSubtaskError
+from .headers import HeadersConfig
 from .http import HTTPClient
 from .login_flow import LoginFlow
 from .transaction_id import ClientTransaction
@@ -84,21 +87,22 @@ class AuthManager:
         if not self.http.csrf_token:
             await self.http.get(
                 'https://x.com/home',
-                params={'prefetchTimestamp': int(time.time()*1000)},
-                headers=self.http.build_headers(authorization=False)
+                headers_config=HeadersConfig.initial_html(),
+                params={'prefetchTimestamp': int(time.time()*1000)}
             )
             if not self.http.csrf_token:
                 raise KeyError('Failed to get ct0 cookie (probably auth_token is invalid).')
 
     async def initialize_client_transaction(self):
         client_transaction = ClientTransaction()
-        await client_transaction.init(self.http, self.http.build_headers(authorization=False))
+        headers = self.http.build_headers('https://x.com', 'GET', HeadersConfig.initial_html())
+        await client_transaction.init(AsyncSession(), headers)
         self.http.client_transaction = client_transaction
 
     async def get_guest_token(self):
         response = await self.http.get(
             'https://x.com/i/flow/login',
-            headers=self.http.build_headers(authorization=False)
+            headers_config=HeadersConfig.initial_html()
         )
         html = response.text
         guest_token_match = re.search(r'gt=([0-9]+);', html)

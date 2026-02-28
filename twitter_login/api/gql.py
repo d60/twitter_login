@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING, Any
 
 from curl_cffi import Response
 
-from ..gql_endpoints.endpoint import GQLState, Endpoint
+from ..gql_endpoints.endpoint import Endpoint, GQLState
+from ..headers import HeadersConfig
 from .utils import UNSET, remove_unset
 
 if TYPE_CHECKING:
@@ -15,18 +16,18 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
-class GQL:
+class GQLClient:
     def __init__(self, http: HTTPClient, state: GQLState) -> None:
         self.http = http
         self.endpoints = state.endpoints
         self.feature_switches = state.feature_switches
 
-    async def get(self, endpoint: Endpoint, variables: dict[str, Any] | None = None, field_toggles: dict[str, bool] | None = None) -> Response:
-        headers = self.http.build_headers(extra_headers={
+    async def get(self, endpoint: Endpoint, variables: dict[str, Any] | None = None, field_toggles: dict[str, bool] | None = None, referer = None) -> Response:
+        headers_config = HeadersConfig.general_api(referer=referer, extra_headers={
             'x-twitter-active-user': 'yes',
-            'x-twitter-client-language': 'en',
-            'x-twitter-auth-type': 'OAuth2Session'
-        }, json=True)
+            'x-twitter-auth-type': 'OAuth2Session',
+            'x-twitter-client-language': 'en'
+        })
         params = {}
         features = endpoint.features
         if variables is not None:
@@ -35,16 +36,20 @@ class GQL:
             params['features'] = json.dumps(features)
         if field_toggles is not None:
             params['field_toggles'] = json.dumps(field_toggles)
-        response = await self.http.get(endpoint.url, params=params, headers=headers)
+        response = await self.http.get(
+            endpoint.url,
+            headers_config,
+            params=params
+        )
         logger.info(f'GraphQL GET {endpoint.url}')
         return response
 
-    async def post(self, endpoint: Endpoint, variables: dict[str, Any] | None = None, add_query_id: bool = False) -> Response:
-        headers = self.http.build_headers(extra_headers={
+    async def post(self, endpoint: Endpoint, variables: dict[str, Any] | None = None, add_query_id: bool = False, referer = None) -> Response:
+        headers_config = HeadersConfig.general_api(referer=referer, extra_headers={
             'x-twitter-active-user': 'yes',
-            'x-twitter-client-language': 'en',
-            'x-twitter-auth-type': 'OAuth2Session'
-        }, json=True)
+            'x-twitter-auth-type': 'OAuth2Session',
+            'x-twitter-client-language': 'en'
+        })
         data = {}
         features = endpoint.features
         if variables is not None:
@@ -53,7 +58,11 @@ class GQL:
             data['features'] = features
         if add_query_id:
             data['queryId'] = endpoint.queryId
-        response = await self.http.post(endpoint.url, json=data, headers=headers)
+        response = await self.http.post(
+            endpoint.url,
+            headers_config,
+            json=data
+        )
         logger.info(f'GraphQL POST {endpoint.url}')
         return response
 
@@ -120,7 +129,12 @@ class GQL:
             'withGrokAnalyze': self.feature_switches.get('subscriptions_inapp_grok_analyze'),
             'withDisallowedReplyControls': self.feature_switches.get('disallowed_reply_controls_callout_enabled')
         }
-        return await self.get(self.endpoints['TweetDetail'], variables, field_toggles)
+        return await self.get(
+            self.endpoints['TweetDetail'],
+            variables,
+            field_toggles,
+            referer=f'https://x.com/i/status/{focalTweetId}'
+        )
 
     async def CreateTweet(self, *, tweet_text, card_uri, attachment_url, reply, batch_compose, geo, media, conversation_control):
         """
@@ -178,7 +192,12 @@ class GQL:
             'conversation_control': conversation_control,
             'disallowed_reply_options': None
         }
-        return await self.post(self.endpoints['CreateTweet'], variables)
+        return await self.post(
+            self.endpoints['CreateTweet'],
+            variables,
+            add_query_id=True,
+            referer='https://x.com/compose/post'
+        )
 
     def test(self):
         """self.endpoints['SearchTimeline']

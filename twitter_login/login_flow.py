@@ -8,7 +8,8 @@ from .castle_token import CastleToken
 from .constants import START_FLOW_PAYLOAD
 from .enums import SubtaskID
 from .errors import HTTPError, LoginError
-from .http import HTTPClient, parse_json_response
+from .headers import FetchDest, HeadersConfig
+from .http import HTTPClient, load_json_response
 from .ui_metrics import solve_ui_metrics
 
 logger = getLogger(__name__)
@@ -33,7 +34,7 @@ class LoginFlow:
         )
 
     def process_response(self, response):
-        data = parse_json_response(response)
+        data = load_json_response(response)
         flow_token = data.get('flow_token')
         subtasks = data.get('subtasks')
         if flow_token is None:
@@ -78,8 +79,15 @@ class LoginFlow:
     async def LoginJsInstrumentationSubtask(self):
         subtask = self.get_subtask(SubtaskID.LOGIN_JS_INSTRUMENTATION_SUBTASK)
         js_url = subtask['js_instrumentation']['url']
-        headers = self.http.build_headers(authorization=False)
-        js_response = await self.http.get(js_url, headers=headers, use_transaction_id=False)
+        headers_config = HeadersConfig(
+            dest=FetchDest.JAVASCRIPT,
+            is_cors=False,
+            authorization=False,
+            csrf_token=False,
+            transaction_id=False,
+            referer='https://x.com/'
+        )
+        js_response = await self.http.get(js_url, headers_config)
         ui_metrics = js_response.text
         try:
             answer = solve_ui_metrics(ui_metrics)

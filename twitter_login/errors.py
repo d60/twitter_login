@@ -27,3 +27,7 @@ class AccountSuspended(AccountError):
 
 class NotLoggedIn(AccountError):
     ...
+
+
+class MediaUploadError(TwitterException):
+    ...

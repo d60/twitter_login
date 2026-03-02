@@ -18,7 +18,7 @@ class SubtaskID(str, Enum):
     DENY_LOGIN_SUBTASK = 'DenyLoginSubtask'
 
 
-class MediaStatus(str, Enum):
+class MediaState(str, Enum):
     PENDING = 'pending'
     IN_PROGRESS = 'in_progress'
     SUCCEEDED = 'succeeded'

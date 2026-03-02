@@ -207,13 +207,15 @@ class MediaUploader:
         api: API,
         source: str | Path | bytes | BufferedIOBase,
         media_category: MediaCategory,
-        mimetype: str | None = None,
-        concurrency: int = 6,
-        enable_video_duration: bool = True
+        mimetype: str | None,
+        concurrency: int,
+        enable_video_duration: bool
     ) -> None:
         self.api = api
         self.media_category = media_category
         self.source = create_source(source)
+        if media_category == MediaCategory.SUBTITLES:
+            mimetype = SUBTITLE_MIMETYPES[0]
         self.mimetype = mimetype or self.source.get_mimetype()
         validate_mimetype(self.mimetype, media_category)
         self.total_bytes = self.source.get_size()
@@ -360,3 +362,8 @@ class MediaUploader:
             allow_async=allow_async
         )
         return load_json_response(response)
+
+    async def upload(self):
+        media_id = await self.init()
+        md5 = await self.append_segments(media_id)
+        return await self.finalize(media_id, md5)

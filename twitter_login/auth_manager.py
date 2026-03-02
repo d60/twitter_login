@@ -62,7 +62,10 @@ async def complete_login_flow(flow: LoginFlow, user_identifiers, password, two_f
             break
 
         elif SubtaskID.DENY_LOGIN_SUBTASK in subtask_ids:
-            raise DenyLoginSubtaskError(f'Response: {str(flow.subtasks)}\n\nPlease try again later or try changing the order of user_identifier.')
+            raise DenyLoginSubtaskError(
+                f'Response: {str(flow.subtasks)}\n\n'
+                'Please try again later or try changing the order of user_identifier.'
+            )
 
         else:
             raise ValueError(f'Unknown subtasks: {subtask_ids}')

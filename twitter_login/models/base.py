@@ -1,4 +1,10 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..client import Client
 
 
 class BaseModel(ABC):
@@ -14,7 +20,7 @@ class BaseModel(ABC):
 
     @classmethod
     @abstractmethod
-    def _from_payload(cls, client, payload, *args, **kwargs):
+    def _from_payload(cls, client: Client, payload: dict):
         ...
 
     def __repr__(self) -> str:
@@ -23,3 +29,10 @@ class BaseModel(ABC):
             return super().__repr__()
         fields = [f'{r}="{getattr(self, r)}"' for r in reprs if hasattr(self, r)]
         return f'<{self.__class__.__name__} {", ".join(fields)}>'
+
+
+def optional_subobject(cls, payload, field_name):
+    data = payload.get(field_name)
+    if data is None:
+        return
+    return cls(**data)

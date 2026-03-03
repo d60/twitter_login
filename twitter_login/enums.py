@@ -38,3 +38,9 @@ class MediaCategory(str, Enum):
     SUBTITLES = 'subtitles'
     PROFILE_BANNER = 'banner_image'
     CARD_IMAGE = 'card_image'
+
+
+class SensitiveMediaWarning(str, Enum):
+    ADULT_CONTENT = 'adult_content'
+    GRAPHIC_VIOLENCE = 'graphic_violence'
+    OTHER = 'other'

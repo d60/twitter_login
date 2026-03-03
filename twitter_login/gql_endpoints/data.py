@@ -84,12 +84,12 @@ REQUIRED_ENDPOINTS_MAPPING = {
 }
 
 BUILDTIME_HASH_MAPPING = {
-    'bundle.DirectMessages': '64999fc',
-    'shared~bundle.ReaderMode~bundle.Birdwatch~bundle.TwitterArticles~bundle.Compose~bundle.Settings~bundle.Displa': 'c1bcf6a',
-    'main': '0aef2cc',
-    'bundle.Communities': '6794f4d',
-    'shared~loader.DashMenu~loader.SideNav~loader.AppModules~loader.DMDrawer~bundle.MultiAccount~bundle.ReaderMode': 'd24e635',
-    'shared~loader.DMDrawer~bundle.DMRichTextCompose~bundle.DirectMessages': '121b30b',
+    'bundle.DirectMessages': '201db81',
+    'shared~bundle.ReaderMode~bundle.Birdwatch~bundle.TwitterArticles~bundle.Compose~bundle.Settings~bundle.Displa': 'c6e23bf',
+    'main': '7253615',
+    'bundle.Communities': '222d1db',
+    'shared~loader.DashMenu~loader.SideNav~loader.AppModules~loader.DMDrawer~bundle.MultiAccount~bundle.ReaderMode': '660cc40',
+    'shared~loader.DMDrawer~bundle.DMRichTextCompose~bundle.DirectMessages': '4a44fdd',
     'bundle.TweetEditHistory': 'ad11fb5'
 }
 
@@ -3087,5 +3087,7 @@ BUILDTIME_DEFAULT_FEATURE_SWITCHES = {
     'xchat_enable_in_memory_event_retry': True,
     'xchat_enable_share_message_v2': False,
     'xchat_fetch_read_events_in_inbox': True,
-    'xchat_resolve_unencrypted_media_locally': False
+    'xchat_resolve_unencrypted_media_locally': False,
+    'gryphon_upgrade_premium_plus_banner_enabled': False,
+    'xchat_enable_batch_sql_events': False
 }

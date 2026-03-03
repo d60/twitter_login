@@ -120,9 +120,39 @@ class V11Client:
         logger.info(params)
         return await self._upload_media('POST', params=params)
 
-    async def upload_media_status(self, media_id):
+    async def upload_media_status(self, *, media_id):
         params = {
             'command': 'STATUS',
             'media_id': media_id
         }
         return await self._upload_media('GET', params=params)
+
+    async def media_metadata_create(self, *, media_id, alt_text, sensitive_media_warning, allow_download_status, grok_actions):
+        """
+        media_id
+            str
+        alt_text
+            text: str
+        sensitive_media_warning
+            options: ["adult_content", "graphic_violence", "other"]
+        allow_download_status
+            allow_download: bool
+        grok_actions
+            block_grok_edit: bool
+        """
+        headers_config = HeadersConfig.general_api(
+            referer='https://x.com/compose/post',
+            extra_headers={
+                'x-twitter-active-user': 'yes',
+                'x-twitter-auth-type': 'OAuth2Session',
+                'x-twitter-client-language': 'en'
+            }
+        )
+        data = remove_unset({
+            'media_id': media_id,
+            'alt_text': alt_text or UNSET,
+            'sensitive_media_warning': UNSET if sensitive_media_warning is None else sensitive_media_warning,
+            'allow_download_status': allow_download_status or UNSET,
+            'grok_actions': grok_actions or UNSET
+        })
+        return await self.http.post('https://x.com/i/api/1.1/media/metadata/create.json', headers_config, json=data)

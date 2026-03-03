@@ -68,8 +68,8 @@ UA_WINDOWS_CHROME_142 = UserAgent(
 )
 
 
-# 仕様間違ってたら教えてください
 class HeadersContext:
+    # High entropy UA values are not supported.
     def __init__(self, domain: str, url: str, method: str, dest: FetchDest, is_user_access: bool, is_cors: bool) -> None:
         self.domain = domain
         self.origin_ = f'https://{domain}'
@@ -198,6 +198,7 @@ class HeadersConfig(NamedTuple):
 
     @classmethod
     def initial_html(cls: Type[HeadersConfig]):
+        # for navigation
         return cls(
             dest=FetchDest.DOCUMENT,
             is_user_access=True,
@@ -208,6 +209,7 @@ class HeadersConfig(NamedTuple):
 
     @classmethod
     def general_js(cls: Type[HeadersConfig], referer: str = 'https://x.com/'):
+        # for fetching js
         return cls(
             dest=FetchDest.JAVASCRIPT,
             is_cors=True,

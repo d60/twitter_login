@@ -156,3 +156,23 @@ class V11Client:
             'grok_actions': grok_actions or UNSET
         })
         return await self.http.post('https://x.com/i/api/1.1/media/metadata/create.json', headers_config, json=data)
+
+    async def media_subtitles_create(self, *, media_id, media_category, subtitle_info):
+        """
+        All supported languages: https://x.com/i/api/graphql/fZ5uZVeledO5SAseKnmTUg/SupportedLanguages?variables=%7B%7D
+        subtitles: [{media_id: "2028725106865033216", language_code: "en", display_name: "English"}]
+        """
+        headers_config = HeadersConfig.general_api(
+            referer='https://x.com/compose/post',
+            extra_headers={
+                'x-twitter-active-user': 'yes',
+                'x-twitter-auth-type': 'OAuth2Session',
+                'x-twitter-client-language': 'en'
+            }
+        )
+        data = {
+            'media_id': media_id,
+            'media_category': media_category,
+            'subtitle_info': subtitle_info
+        }
+        return await self.http.post('https://x.com/i/api/1.1/media/subtitles/create.json', headers_config, json=data)

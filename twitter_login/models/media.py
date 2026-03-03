@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Sequence
 from ..enums import MediaCategory, MediaState, SensitiveMediaWarning
 from ..errors import MediaUploadError
 from ..http import load_json_response
-from ..media import SUBTITLE_CATEGORIES
+from ..media import SUBTITLE_CATEGORIES, VIDEO_CATEGORIES
 from ..utils import sort_enum_values
 from .base import BaseModel, optional_subobject
 
@@ -85,6 +85,7 @@ class Media(BaseModel, reprs=('media_id', 'category')):
     image: Image | None = None
     subtitles: Subtitles | None = None
     metadata: Metadata | None = None
+    has_subtitles: bool = False
 
     def _apply_status(self, payload: dict):
         self.expires_after_secs = payload.get('expires_after_secs')
@@ -197,3 +198,31 @@ class Media(BaseModel, reprs=('media_id', 'category')):
             self.metadata = Metadata()
         logger.info(f'Updated media ({self.media_id}) metadata: {self.metadata}')
         self.metadata._update(params)
+
+    async def create_subtitles(self, subtitles: Media):
+        """
+        Creates video subtitles.
+        This method is available only for videos.
+        """
+        if self.has_subtitles:
+            raise RuntimeError(f'Subtitles have already been created for media {self.media_id}.')
+
+        if not self.category in VIDEO_CATEGORIES:
+            raise ValueError(f'Subtitle is only supported for video categories.')
+        if not subtitles.category in SUBTITLE_CATEGORIES:
+            raise ValueError(f'The provided subtitle category "{subtitles.category}" is invalid.')
+        subtitle_info = {
+            'subtitles': [
+                {
+                    'media_id': subtitles.media_id,
+                    'language_code': 'en',
+                    'display_name': 'English'
+                }
+            ]
+        }
+        await self._client._api.v11.media_subtitles_create(
+            media_id=self.media_id,
+            media_category=self.category,
+            subtitle_info=subtitle_info
+        )
+        self.has_subtitles = True

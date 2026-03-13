@@ -44,3 +44,17 @@ class SensitiveMediaWarning(str, Enum):
     ADULT_CONTENT = 'adult_content'
     GRAPHIC_VIOLENCE = 'graphic_violence'
     OTHER = 'other'
+
+
+class BatchCompose(str, Enum):
+    SINGLE_TWEET = 'off'
+    FIRST_TWEET = 'first'
+    SUBSEQUENT_TWEET = 'subsequent'
+
+
+class ConversationControl(str, Enum):
+    COMMUNITY = 'Community'
+    BY_INVITATION = 'ByInvitation'
+    SUBSCRIBERS = 'Subscribers'
+    VERIFIED = 'Verified'
+    PREMIUM = 'Premium'

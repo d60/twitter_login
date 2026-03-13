@@ -189,7 +189,7 @@ class GQLClient:
             'dark_request': False,
             'media': media,
             'semantic_annotation_ids': [],
-            'conversation_control': conversation_control,
+            'conversation_control': conversation_control or UNSET,
             'disallowed_reply_options': None
         }
         return await self.post(

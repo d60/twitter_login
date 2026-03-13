@@ -1,38 +1,30 @@
-from __future__ import annotations
-
-from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..client import Client
+    from typing_extensions import dataclass_transform
+else:
+    def dataclass_transform(*args, **kwargs):
+        return lambda x: x
 
 
-class BaseModel(ABC):
-    _client: object
+@dataclass_transform(
+    kw_only_default=True,
+    slots_default=True
+)
+def model(*, reprs = None):
+    if isinstance(reprs, str):
+        reprs = (reprs,)
 
-    def __init_subclass__(cls, **kwargs):
-        reprs = kwargs.pop('reprs', None)
-        super().__init_subclass__(**kwargs)
+    def deco(cls):
+        dtcls = dataclass(repr=False, slots=True, kw_only=True)(cls)
+
         if reprs:
-            if isinstance(reprs, str):
-                reprs = (reprs,)
-            cls._reprs = reprs
+            def repr(self):
+                fields = [f'{r}="{getattr(self, r)}"' for r in reprs if hasattr(self, r)]
+                return f'<{self.__class__.__name__} {", ".join(fields)}>'
 
-    @classmethod
-    @abstractmethod
-    def _from_payload(cls, client: Client, payload: dict):
-        ...
+            dtcls.__repr__ = repr
 
-    def __repr__(self) -> str:
-        reprs = self._reprs
-        if not reprs:
-            return super().__repr__()
-        fields = [f'{r}="{getattr(self, r)}"' for r in reprs if hasattr(self, r)]
-        return f'<{self.__class__.__name__} {", ".join(fields)}>'
-
-
-def optional_subobject(cls, payload, field_name):
-    data = payload.get(field_name)
-    if data is None:
-        return
-    return cls(**data)
+        return dtcls
+    return deco

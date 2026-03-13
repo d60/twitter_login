@@ -11,12 +11,19 @@ from ..errors import MediaUploadError
 from ..http import load_json_response
 from ..media import SUBTITLE_CATEGORIES, VIDEO_CATEGORIES
 from ..utils import sort_enum_values
-from .base import BaseModel, optional_subobject
+from .base import model
 
 if TYPE_CHECKING:
     from ..client import Client
 
 logger = getLogger(__name__)
+
+
+def optional_subobject(cls, payload, field_name):
+    data = payload.get(field_name)
+    if data is None:
+        return
+    return cls(**data)
 
 
 @dataclass(slots=True)
@@ -71,8 +78,8 @@ class Metadata:
         return f'{self.__class__.__name__}({text})'
 
 
-@dataclass(slots=True, repr=False)
-class Media(BaseModel, reprs=('media_id', 'category')):
+@model(reprs=('media_id', 'category'))
+class UploadedMedia:
     _client: Client
     category: MediaCategory
     media_id: str
@@ -85,7 +92,23 @@ class Media(BaseModel, reprs=('media_id', 'category')):
     image: Image | None = None
     subtitles: Subtitles | None = None
     metadata: Metadata | None = None
-    has_subtitles: bool = False
+    _has_subtitles: bool = False
+
+    @classmethod
+    def _from_payload(cls: type[UploadedMedia], payload: dict, client: Client, category: MediaCategory):
+        media_id = payload.get('media_id_string')
+        media_key = payload.get('media_key')
+        size = payload.get('size')
+
+        instance = cls(
+            _client=client,
+            category=category,
+            media_id=media_id,
+            media_key=media_key,
+            size=size
+        )
+        instance._apply_status(payload)
+        return instance
 
     def _apply_status(self, payload: dict):
         self.expires_after_secs = payload.get('expires_after_secs')
@@ -94,17 +117,7 @@ class Media(BaseModel, reprs=('media_id', 'category')):
         self.image = optional_subobject(Image, payload, 'image')
         self.subtitles = optional_subobject(Subtitles, payload, 'subtitles')
 
-    @classmethod
-    def _from_payload(cls, client: Client, payload: dict, category: MediaCategory):
-        media_id = payload.get('media_id_string')
-        media_key = payload.get('media_key')
-        size = payload.get('size')
-
-        instance = cls(client, category, media_id, media_key, size)
-        instance._apply_status(payload)
-        return instance
-
-    async def update_status(self):
+    async def _update_status(self):
         response = await self._client._api.v11.upload_media_status(media_id=self.media_id)
         payload = load_json_response(response)
         self._apply_status(payload)
@@ -141,7 +154,7 @@ class Media(BaseModel, reprs=('media_id', 'category')):
                     raise MediaUploadError('Upload timeout')
                 check_after_secs = self.processing_info.check_after_secs or 1
                 await asyncio.sleep(check_after_secs)
-                await self.update_status()
+                await self._update_status()
 
             else:
                 raise MediaUploadError(f'Unknown uploading state: "{state}"')
@@ -199,12 +212,12 @@ class Media(BaseModel, reprs=('media_id', 'category')):
         logger.info(f'Updated media ({self.media_id}) metadata: {self.metadata}')
         self.metadata._update(params)
 
-    async def create_subtitles(self, subtitles: Media):
+    async def create_subtitles(self, subtitles: UploadedMedia):
         """
         Creates video subtitles.
         This method is available only for videos.
         """
-        if self.has_subtitles:
+        if self._has_subtitles:
             raise RuntimeError(f'Subtitles have already been created for media {self.media_id}.')
 
         if not self.category in VIDEO_CATEGORIES:
@@ -225,4 +238,20 @@ class Media(BaseModel, reprs=('media_id', 'category')):
             media_category=self.category,
             subtitle_info=subtitle_info
         )
-        self.has_subtitles = True
+        self._has_subtitles = True
+
+
+def build_tweet_media_parameter(media: list[UploadedMedia], tagged_users: list[str]):
+    media_entities = []
+    for m in media:
+        if not isinstance(m, UploadedMedia):
+            raise TypeError('Media must be an instance of `UploadedMedia`.')
+
+        media_entities.append({
+            'media_id': m.media_id,
+            'tagged_users': tagged_users
+        })
+    return {
+        'media_entities': media_entities,
+        'possibly_sensitive': False
+    }

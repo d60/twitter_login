@@ -32,3 +32,12 @@ def sort_enum_values(values: Sequence[T], enum_class: Type[T]) -> list[T]:
 
     value_index = {v: i for i, v in enumerate(class_values)}
     return sorted(values, key=value_index.get)
+
+
+def safe_convert(obj, type):
+    if obj is None:
+        return None
+    try:
+        return type(obj)
+    except (TypeError, ValueError):
+        return None

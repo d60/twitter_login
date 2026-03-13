@@ -65,7 +65,11 @@ class GQLEndpointsManager:
             old_hash = self.state.hash_mapping.get(filename)
             new_hash = self.js_hash_mapping.get(filename)
             if not new_hash:
-                raise ValueError(f'File hash for "{filename}" not found.')
+                logger.warning(
+                    f'JS file "{filename}" was not found in html. Please try the latest build.'
+                )
+                self.js_hash_mapping[filename] = old_hash  # first aid
+                continue
             if old_hash == new_hash:
                 continue
             files_data.append((filename, new_hash))

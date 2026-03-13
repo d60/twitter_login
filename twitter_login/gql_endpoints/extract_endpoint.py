@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 import re
 from collections import defaultdict
 from logging import getLogger
-from typing import AsyncGenerator, Callable, TypedDict
+from typing import TYPE_CHECKING, AsyncGenerator, Callable, TypedDict
 
 import chompjs
-from typing_extensions import NotRequired
+
+if TYPE_CHECKING:
+    from typing_extensions import NotRequired
 
 logger = getLogger(__name__)
 

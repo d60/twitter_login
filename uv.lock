@@ -581,7 +581,7 @@ wheels = [
 
 [[package]]
 name = "twitter-login"
-version = "0.1.0"
+version = "0.1.0.dev1"
 source = { virtual = "." }
 dependencies = [
     { name = "bs4" },

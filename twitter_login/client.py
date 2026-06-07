@@ -132,6 +132,7 @@ class Client:
             media or [], tagged_users or []
         )
 
+        reply = None
         if reply_to:
             reply = {
                 'in_reply_to_tweet_id': reply_to,

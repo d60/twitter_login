@@ -24,6 +24,7 @@ all = [
 [dependency-groups]
 dev = [
     "colorlog>=6.10.1",
+    "tqdm>=4.68.1",
 ]
 
 [tool.setuptools.packages.find]

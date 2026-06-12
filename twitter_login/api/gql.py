@@ -143,7 +143,7 @@ class GQLClient:
         All params: tweet_text, card_uri, attachment_url, reply, batch_compose, geo, dark_request, media,
                     semantic_annotation_ids, conversation_control, content_disclosure, exclusive_tweet_control_options,
                     edit_options, premium_tweet_control_options, richtext_options, media_options, broadcast, disallowed_reply_options
-        Options:
+        Params:
             tweet_text:
                 Tweet text
             card_uri:
@@ -202,6 +202,19 @@ class GQLClient:
         )
 
     async def SearchTimeline(self, *, rawQuery, count, cursor, querySource, product):
+        """
+        Params:
+            rawQuery:
+                Search Query
+            count:
+                Items count to fetch
+            cursor:
+                next or previous cursor (base64 encoded thfift value)
+            querySource:
+                See `enums.SearchTimelineQuerySource`
+            product:
+                See `SearchTimelineProduct`
+        """
         withGrokTranslatedBio = product in ('Top', 'People') and self.feature_switches.get(
             'responsive_web_grok_bio_auto_translation_in_search_is_enabled'
         )

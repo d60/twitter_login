@@ -22,68 +22,33 @@ from .utils import optional_chaining
 if TYPE_CHECKING:
     from .models import Tweet, User
 
-
 logger = getLogger(__name__)
 
 
 class Client:
-    def __init__(self, user_agent: UserAgent):
-        http = HTTPClient(user_agent, impersonate='chrome146')
-        self._http = http
+    def __init__(self, user_agent: UserAgent, impersonate: str):
+        http = HTTPClient(user_agent, impersonate=impersonate)
         self._gql_endpoints_manager = GQLEndpointsManager(http)
         self._api = API(http, self._gql_endpoints_manager.state)
         self._auth_manager = AuthManager(http, self._api)
         self.ratelimits = http.ratelimits_manager
 
-    # async def login(
-    #     self,
-    #     user_identifiers: Sequence[str],
-    #     password: str,
-    #     cookies_file: str,
-    #     *,
-    #     two_fa_handler: Callable[[], str] = default_two_fa_handler,
-    #     email_confirmation_handler: Callable[[], str] = default_email_confirmation_handler,
-    #     castle_fingerprint = None,
-    # ) -> None:
-    #     if os.path.exists(cookies_file):
-    #         with open(cookies_file, encoding='utf-8') as f:
-    #             try:
-    #                 cookies = json.load(f)
-    #             except json.JSONDecodeError as e:
-    #                 raise ValueError(f'Failed loading cookies from "{cookies_file}"') from e
-    #         await self._auth_manager.login_with_cookies(cookies)
-    #     else:
-    #         await self._auth_manager.login(
-    #             user_identifiers,
-    #             password,
-    #             two_fa_handler,
-    #             email_confirmation_handler,
-    #             castle_fingerprint
-    #         )
-    #         self._auth_manager.save_cookies(cookies_file)
-    #     await self._gql_endpoints_manager.update_state()
-
-    async def load_cookies_dict(self, cookies: dict[str, str]) -> None:
+    async def load_cookies_dict(self, cookies: dict[str, str], update_gql_endpoints: bool = True) -> None:
         if not isinstance(cookies, dict):
             raise ValueError(f'Cookies must be dict, not {cookies.__class__.__name__}.')
         await self._auth_manager.login_with_cookies(cookies)
-        await self._gql_endpoints_manager.update_state()
+        if update_gql_endpoints:
+            await self._gql_endpoints_manager.update_state()
 
-    async def load_cookies(self, path: str) -> None:
+    async def load_cookies(self, path: str, update_gql_endpoints: bool = True) -> None:
         if not isinstance(path, str):
             raise ValueError(f'Path must be str, not {path.__class__.__name__}')
         with open(path, encoding='utf-8') as f:
             cookies = json.load(f)
-        await self.load_cookies_dict(cookies)
+        await self.load_cookies_dict(cookies, update_gql_endpoints)
 
     def save_cookies(self, path):
         self._auth_manager.save_cookies(path)
-
-    async def close(self) -> None:
-        """
-        Closes the HTTP session.
-        """
-        await self._http.close()
 
     async def upload_media(
         self,
@@ -172,6 +137,7 @@ class Client:
         query_source: SearchTimelineQuerySource = ...
     ) -> PaginatedResult[User]:
         ...
+
     @overload
     async def search(
         self,
@@ -277,7 +243,7 @@ class Client:
             Client.search,
             cursor_top,
             cursor_bottom,
-            # kwargs
+            # params
             query=query,
             product=product,
             count=count,

@@ -7,4 +7,7 @@ UNSET = Unset()
 
 
 def remove_unset(dict_):
+    """
+    Removes UNSET values from the request params.
+    """
     return {k: v for k, v in dict_.items() if v is not UNSET}

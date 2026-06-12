@@ -153,7 +153,9 @@ class HeadersBuilder:
         }
 
     def build(self, url: str, method: str, dest: FetchDest, is_user_access: bool = None, is_cors: bool = None):
-        context = HeadersContext(self.domain, url, method, dest, is_user_access, is_cors)
+        context = HeadersContext(
+            self.domain, url, method, dest, is_user_access, is_cors
+        )
         return {
             **self.ua_headers(),
             'sec-fetch-dest': dest.value,

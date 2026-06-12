@@ -1,78 +1,18 @@
 import json
-import random
 import re
 import time
-import uuid
 from logging import getLogger
 
 from curl_cffi import AsyncSession
 
 from .api import API
-from .castle_token import CastleToken
 from .constants import COOKIES_DOMAIN
-from .enums import SubtaskID
-from .errors import DenyLoginSubtaskError
 from .headers import HeadersConfig
 from .http import HTTPClient
-from .login_flow import LoginFlow
 from .transaction_id import ClientTransaction
-from .transaction_id.utils import handle_x_migration_async, get_ondemand_file_url
+from .transaction_id.utils import get_ondemand_file_url, handle_x_migration_async
 
 logger = getLogger(__name__)
-
-
-async def complete_login_flow(flow: LoginFlow, user_identifiers, password, two_fa_handler, email_confirmation_handler):
-    while True:
-        subtask_ids = {i.get('subtask_id') for i in flow.subtasks}
-
-        if SubtaskID.LOGIN_JS_INSTRUMENTATION_SUBTASK in subtask_ids:
-            await flow.LoginJsInstrumentationSubtask()
-            await flow.sso_init()
-
-        elif SubtaskID.LOGIN_ENTER_USER_IDENTIFIER_SSO in subtask_ids:
-            flow.LoginEnterUserIdentifierSSO(user_identifiers[0])
-
-        elif SubtaskID.LOGIN_ENTER_ALTERNATE_IDENTIFIER_SUBTASK in subtask_ids:
-            if len(user_identifiers) < 2:
-                raise ValueError('Alternate identifier required.')
-            flow.LoginEnterAlternateIdentifierSubtask(user_identifiers[1])
-
-        elif SubtaskID.LOGIN_ENTER_PASSWORD in subtask_ids:
-            flow.LoginEnterPassword(password)
-
-        elif SubtaskID.LOGIN_TWO_FACTOR_AUTH_CHALLENGE in subtask_ids:
-            try:
-                totp = two_fa_handler()
-            except Exception as e:
-                raise RuntimeError('Failed to get 2FA code') from e
-            if not (isinstance(totp, str) and len(totp) == 6):
-                raise ValueError('2FA handler must return 6-digit string')
-            flow.LoginTwoFactorAuthChallenge(totp)
-
-        elif SubtaskID.LOGIN_ACID in subtask_ids:
-            try:
-                confirmation_code = email_confirmation_handler()
-            except Exception as e:
-                raise RuntimeError('Failed to get email confirmation code') from e
-            if not (isinstance(confirmation_code, str) and len(confirmation_code) == 8):
-                raise ValueError('Email confirmation handler must return 8-digit string')
-            flow.LoginAcid(confirmation_code)
-
-        elif SubtaskID.LOGIN_SUCCESS_SUBTASK in subtask_ids:
-            logger.info('Login successful')
-            break
-
-        elif SubtaskID.DENY_LOGIN_SUBTASK in subtask_ids:
-            raise DenyLoginSubtaskError(
-                f'Response: {str(flow.subtasks)}\n\n'
-                'Please try again later or try changing the order of user_identifier.'
-            )
-
-        else:
-            raise ValueError(f'Unknown subtasks: {subtask_ids}')
-
-        logger.info(f'Executing subtasks: {subtask_ids}')
-        await flow.execute_subtasks()
 
 
 class AuthManager:
@@ -104,6 +44,7 @@ class AuthManager:
         ondemand_file = await session.get(url=ondemand_file_url)
         client_transaction = ClientTransaction(home_page_response, ondemand_file)
         self.http.client_transaction = client_transaction
+        logger.info('Initalized ClientTransaction')
 
     async def get_guest_token(self):
         response = await self.http.get(
@@ -128,28 +69,3 @@ class AuthManager:
             self.http.cookies.set(k, v, COOKIES_DOMAIN)
         await self.ensure_authenticated()
         await self.initialize_client_transaction()
-
-    async def login(
-        self,
-        user_identifiers,
-        password,
-        two_fa_handler,
-        email_confirmation_handler,
-        castle_fingerprint,
-    ) -> None:
-        if not user_identifiers:
-            raise ValueError('At least one user identifier is required.')
-
-        await self.get_guest_token()
-        await self.initialize_client_transaction()
-        init_time = int(time.time() * 1000) - random.randint(10000, 20000)
-        cuid = uuid.uuid4().hex
-        self.http.cookies.set('__cuid', cuid, COOKIES_DOMAIN)
-
-        castle = CastleToken(init_time, cuid, castle_fingerprint)
-        flow = LoginFlow(self.http, self.api, castle)
-
-        await flow.start_flow()
-        await complete_login_flow(flow, user_identifiers, password, two_fa_handler, email_confirmation_handler)
-
-        await self.ensure_authenticated()

@@ -2,13 +2,14 @@ from collections import defaultdict
 from functools import wraps
 from logging import getLogger
 from typing import Callable
-from .errors import ResponseError
 
+from .errors import ResponseError
+from .models import Tweet, User
 from .utils import optional_chaining
 
 logger = getLogger(__name__)
 
-## Response parser utilities
+# Response parser utilities
 
 
 def entry_id_to_type(entry_id: str) -> str:
@@ -31,7 +32,25 @@ def get_instructions(response: dict, *path_to_instructions) -> dict[str, list[di
 
 def group_list_by_key(l: list[dict], key: Callable) -> dict[str, list[dict]]:
     """
-    Groups dicts by a specific key..
+    Groups dicts by a specific key.
+    Example:
+        X = [
+            {'key': 'A', 'value': 1},
+            {'key': 'A', 'value': 2},
+            {'key': 'B', 'value': 1},
+            {'key': 'B', 'value': 2}
+        ]
+        group_list_by_key(X, 'key')
+        >>> {
+            'A': [
+                {'key': 'A', 'value': 1},
+                {'key': 'A', 'value': 2}
+            ],
+            'B': [
+                {'key': 'B', 'value': 1},
+                {'key': 'B', 'value': 2}
+            ]
+        }
     """
     m = defaultdict(list)
     for elem in l:
@@ -41,36 +60,42 @@ def group_list_by_key(l: list[dict], key: Callable) -> dict[str, list[dict]]:
 
 
 def group_instructions(raw_instructions: list[dict]) -> dict[str, list[dict]]:
+    """
+    Groups instructions by type
+    """
     return group_list_by_key(raw_instructions, lambda x: x.get('type'))
 
 
 def group_entries(raw_entries: list[dict]) -> dict[str, list[dict]]:
+    """
+    Groups entries by entry type
+    """
     return group_list_by_key(
         raw_entries,
         lambda x: entry_id_to_type(x['entryId'])
     )
 
 
-def get_cursors_from_entries(entries: dict[str, list[dict]]) -> tuple[str | None, str | None]:
+def get_cursors_from_entries(grouped_entries: dict[str, list[dict]]) -> tuple[str | None, str | None]:
     """
     Extracts (cursor-top, cursor-bottom) from the TimelineAddEntries instruction.
     """
     return tuple(
         (
-            entries[type][0].get('content', {}).get('value')
-            if type in entries else None
+            grouped_entries[type][0].get('content', {}).get('value')
+            if type in grouped_entries else None
         )
         for type in ('cursor-top', 'cursor-bottom')
     )
 
 
-def get_cursors_from_replace_entries(instructions):
+def get_cursors_from_replace_entries(replace_entry_instructions):
     """
     Extracts (cursor-top, cursor-bottom) from list of ReplaceEntry instructions.
     """
     cursor_top = cursor_bottom = None
 
-    for i in instructions:
+    for i in replace_entry_instructions:
         entry = i.get('entry')
         if not entry:
             continue
@@ -86,7 +111,8 @@ def get_cursors_from_replace_entries(instructions):
 
     return cursor_top, cursor_bottom
 
-
+# Entries parsers
+# @register_parser('entry-type') registers a parser for 'entry-type'.
 
 parsers = {}
 
@@ -100,10 +126,8 @@ def register_parser(type: str):
         return wrapper
     return deco
 
-from .models import Tweet, User
 
-
-def parse_tweet_base(client, payload):
+def _parse_tweet_base(client, payload):
     if not payload:
         logger.warning('Failed to parse a tweet entry. Tweet data not found.')
         return
@@ -120,15 +144,16 @@ def parse_tweet(client, entry):
     payload = optional_chaining(
         entry, 'content', 'itemContent', 'tweet_results', 'result'
     )
-    return parse_tweet_base(client, payload)
+    return _parse_tweet_base(client, payload)
 
 
 @register_parser('search-grid-0-tweet')
 def parse_search_grid_0_tweet(client, entry):
+    # media searching result
     payload = optional_chaining(
         entry, 'item', 'itemContent', 'tweet_results', 'result'
     )
-    return parse_tweet_base(client, payload)
+    return _parse_tweet_base(client, payload)
 
 
 @register_parser('user')
@@ -142,6 +167,11 @@ def parse_user(client, entry):
 
 
 def parse_entries(client, entries):
+    """
+    Parses entries list.
+    Yields parsed etry object.
+    """
+
     for entry in entries:
         entry_id = entry.get('entryId')
         if not entry_id:

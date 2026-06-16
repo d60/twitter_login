@@ -77,10 +77,10 @@ REQUIRED_ENDPOINTS_MAPPING = {
 }
 
 BUILDTIME_HASH_MAPPING = {
-    'bundle.DirectMessages': '909591b',
-    'shared~bundle.GrokDrawer~bundle.ReaderMode~bundle.Birdwatch~bundle.TwitterArticles~bundle.Compose~bundle.Sett': '1fa1c08',
-    'main': 'dae17ed',
-    'bundle.Communities': '35c77c5',
+    'bundle.DirectMessages': '3c8e8f3',
+    'shared~bundle.GrokDrawer~bundle.ReaderMode~bundle.Birdwatch~bundle.TwitterArticles~bundle.Compose~bundle.Sett': '08711e7',
+    'main': '1657c8f',
+    'bundle.Communities': 'dfd3c9f',
     'bundle.TweetEditHistory': '86bb173'
 }
 
@@ -2291,7 +2291,7 @@ BUILDTIME_DEFAULT_FEATURE_SWITCHES = {
     'longform_notetweets_consumption_enabled': True,
     'longform_notetweets_inline_media_enabled': False,
     'longform_notetweets_rich_text_read_enabled': True,
-    'post_ctas_fetch_enabled': True,
+    'post_ctas_fetch_enabled': False,
     'premium_content_api_read_enabled': False,
     'profile_label_improvements_pcf_label_in_post_enabled': True,
     'responsive_web_birdwatch_fast_notes_badge_enabled': False,
@@ -2513,7 +2513,7 @@ BUILDTIME_DEFAULT_FEATURE_SWITCHES = {
     'payments_passkey_onboarding_enabled': True,
     'payments_tracing_reports_enabled': True,
     'payments_transaction_search_enabled': True,
-    'post_ctas_render_enabled': True,
+    'post_ctas_render_enabled': False,
     'premium_business_offers_banner_portal_basic_tier': False,
     'premium_business_offers_banner_sidebar_basic_tier': False,
     'premium_business_offers_nav_indicator_enabled': False,
@@ -3006,7 +3006,7 @@ BUILDTIME_DEFAULT_FEATURE_SWITCHES = {
     'subscriptions_offers_dynamic_upsells_enabled': True,
     'subscriptions_offers_in_tier_switch_enabled': False,
     'subscriptions_offers_localized_pricing_enabled': False,
-    'subscriptions_offers_premium_nav_indicator_enabled': False,
+    'subscriptions_offers_premium_nav_indicator_enabled': True,
     'subscriptions_offers_special_perk_enabled': False,
     'subscriptions_offers_upgrade_offer_home_nav_upsell_enabled': False,
     'subscriptions_offers_upgrade_offer_sidebar_upsell_enabled': False,
@@ -3047,7 +3047,7 @@ BUILDTIME_DEFAULT_FEATURE_SWITCHES = {
     'subscriptions_upsells_post_analytics_promo_variant_enabled': False,
     'subscriptions_upsells_post_details_analytics_enabled': True,
     'subscriptions_upsells_post_engagements_enabled': False,
-    'subscriptions_upsells_premium_home_nav_promo_variant_enabled': False,
+    'subscriptions_upsells_premium_home_nav_promo_variant_enabled': True,
     'subscriptions_upsells_premium_nav_migration_enabled': False,
     'subscriptions_upsells_profile_card_enabled': False,
     'subscriptions_upsells_profile_sidebar_analytics_upsell_enabled': False,
@@ -3295,5 +3295,12 @@ BUILDTIME_DEFAULT_FEATURE_SWITCHES = {
     'responsive_web_quick_promote_high_budget_tier_enabled': False,
     'rweb_cashtags_composer_attachment_size_customization_enabled': True,
     'subscriptions_offers_go_for_launch_copy_enabled': True,
-    'xchat_keypair_recovery_enabled': False
+    'xchat_keypair_recovery_enabled': False,
+    'responsive_web_notifications_refresher_enabled': False,
+    'web_video_teardown_listener_fix_enabled': False,
+    'xchat_enable_message_request_ui_v3': False,
+    'xchat_media_download_io_batching_enabled': False,
+    'xchat_media_upload_io_batching_enabled': False,
+    'xchat_plaintext_grok_enabled': False,
+    'xchat_url_preview_v2_enabled': True
 }

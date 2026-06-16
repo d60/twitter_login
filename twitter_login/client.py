@@ -4,11 +4,17 @@ import json
 from io import BufferedIOBase
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, overload, Any
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 from .api import API
 from .auth_manager import AuthManager
-from .enums import BatchCompose, ConversationControl, InstructionType, SearchTimelineProduct, SearchTimelineQuerySource
+from .enums import (
+    BatchCompose,
+    ConversationControl,
+    InstructionType,
+    SearchTimelineProduct,
+    SearchTimelineQuerySource
+)
 from .errors import MediaUploadError
 from .gql_endpoints import GQLEndpointsManager
 from .headers import UserAgent
@@ -16,7 +22,14 @@ from .http import HTTPClient
 from .media import MediaCategory, MediaUploader
 from .models import Tweet, UploadedMedia, build_tweet_media_parameter
 from .pagination import PaginatedResult, PaginationContext
-from .parsers import get_cursors_from_entries, get_cursors_from_replace_entries, get_instructions, group_entries, handle_response_errors, parse_entries
+from .parsers import (
+    get_cursors_from_entries,
+    get_cursors_from_replace_entries,
+    get_instructions,
+    group_entries,
+    handle_response_errors,
+    parse_entries
+)
 from .utils import optional_chaining
 
 if TYPE_CHECKING:

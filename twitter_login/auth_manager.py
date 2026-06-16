@@ -25,10 +25,14 @@ class AuthManager:
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(cookies, f)
 
-    async def ensure_authenticated(self):
+    async def validate_authentication(self):
+        """
+        Validates authentication cookies.
+        """
         if not self.http.cookies.get('auth_token', domain=COOKIES_DOMAIN):
             raise KeyError('"auth_token" not found in cookies.')
         if not self.http.csrf_token:
+            # request home to get the csft cookie
             await self.http.get(
                 'https://x.com/home',
                 headers_config=HeadersConfig.initial_html(),
@@ -47,8 +51,13 @@ class AuthManager:
         logger.info('Initalized ClientTransaction')
 
     async def get_guest_token(self):
+        """
+        Extracts guest token from html and sets gt cookie.
+        """
+        if self.http.guest_token:
+            return
         response = await self.http.get(
-            'https://x.com/i/flow/login',
+            'https://x.com/i/jf/onboarding/web',
             headers_config=HeadersConfig.initial_html()
         )
         html = response.text
@@ -67,5 +76,5 @@ class AuthManager:
             if not isinstance(v, str):
                 raise ValueError('Cookie value must be str.')
             self.http.cookies.set(k, v, COOKIES_DOMAIN)
-        await self.ensure_authenticated()
+        await self.validate_authentication()
         await self.initialize_client_transaction()

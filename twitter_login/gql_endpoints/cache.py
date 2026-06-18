@@ -25,6 +25,7 @@ def load_json(path: Path, validator):
     logger.info(f'Loaded cache from {path}')
     return data
 
+
 def dump_json(path: Path, obj, validator):
     v = validator(obj)
     if v:

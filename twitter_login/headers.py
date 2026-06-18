@@ -1,3 +1,7 @@
+"""
+Generates the appropriate headers for each request.
+"""
+
 from __future__ import annotations
 
 from enum import Enum

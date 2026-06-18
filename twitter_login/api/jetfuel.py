@@ -1,22 +1,23 @@
 from __future__ import annotations
 
+from logging import getLogger
 from typing import TYPE_CHECKING
 
 from ..headers import FetchDest, HeadersConfig
 from ..jetfuel import JETFUEL_VERSION, JetfuelChunkReader
-from logging import Logger
+from .utils import UNSET, remove_unset
 
 if TYPE_CHECKING:
     from ..http import HTTPClient
 
-logger = Logger(__name__)
+logger = getLogger(__name__)
 
 
 class JetfuelClient:
     def __init__(self, http: HTTPClient) -> None:
         self.http = http
 
-    async def jetfuel_request(self, method, url, extra_headers = None, referer = None, **kwargs) -> JetfuelChunkReader:
+    async def jetfuel_request(self, method, url, extra_headers = None, referer = None, data = None, **kwargs) -> JetfuelChunkReader:
         """
         Jetfuel request.
         Returns the jf parser object.
@@ -33,6 +34,9 @@ class JetfuelClient:
         if extra_headers:
             headers |= extra_headers
 
+        if data:
+            data = remove_unset(data)
+
         headers_config = HeadersConfig(
             dest=FetchDest.FETCH,
             csrf_token=False,
@@ -44,12 +48,13 @@ class JetfuelClient:
             method,
             url,
             headers_config,
+            data=data,
             **kwargs
         )
         content = response.content
         return JetfuelChunkReader(content)
 
-    async def begin_login(self, username_or_email, castle_token) -> JetfuelChunkReader:
+    async def begin_login(self, *, username_or_email, castle_token) -> JetfuelChunkReader:
         data = {
             'username_or_email': username_or_email,
             '$castle_token': castle_token
@@ -61,10 +66,11 @@ class JetfuelClient:
             data=data
         )
 
-    # TODO `username` parameter can be email or phone
-    async def login_enter_password(self, username, password, session_token, castle_token):
+    async def login_enter_password(self, *, username, email, password, session_token, castle_token) -> JetfuelChunkReader:
         data = {
-            'username': username,
+            # either email or username
+            'email': email or UNSET,
+            'username': username or UNSET,
             'password': password,
             'session_token': session_token,
             '$castle_token': castle_token

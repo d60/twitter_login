@@ -1,6 +1,6 @@
 [project]
 name = "twitter_login"
-version = "0.1.0.dev8"
+version = "0.1.0.dev9"
 description = "dev"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -9,9 +9,6 @@ dependencies = [
     "chompjs>=1.4.1",
     "curl-cffi>=0.15.0",
     "lxml>=6.1.1",
-    "mmh3>=5.2.1",
-    "pyotp>=2.9.0",
-    "stpyv8>=13.1.201.22",
 ]
 
 [project.optional-dependencies]

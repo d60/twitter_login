@@ -1,3 +1,5 @@
+# Build Time: 2026-06-18 16:49:55.269857+00:00
+
 REQUIRED_ENDPOINTS_MAPPING = {
     'bundle.DirectMessages': [
         'AddParticipantsMutation'
@@ -77,10 +79,10 @@ REQUIRED_ENDPOINTS_MAPPING = {
 }
 
 BUILDTIME_HASH_MAPPING = {
-    'bundle.DirectMessages': '49d729c',
-    'shared~bundle.GrokDrawer~bundle.ReaderMode~bundle.Birdwatch~bundle.TwitterArticles~bundle.Compose~bundle.Sett': 'e06e765',
-    'main': '0730f87',
-    'bundle.Communities': '304fa90',
+    'bundle.DirectMessages': '3c8e8f3',
+    'shared~bundle.GrokDrawer~bundle.ReaderMode~bundle.Birdwatch~bundle.TwitterArticles~bundle.Compose~bundle.Sett': '08711e7',
+    'main': 'fbfbe12',
+    'bundle.Communities': 'bd13332',
     'bundle.TweetEditHistory': '86bb173'
 }
 
@@ -2902,7 +2904,7 @@ BUILDTIME_DEFAULT_FEATURE_SWITCHES = {
     'rweb_sourcemap_migration': False,
     'rweb_spaces_invite_search_enabled': True,
     'rweb_spaces_next_codec_enabled': True,
-    'rweb_ssp_ads_enabled': True,
+    'rweb_ssp_ads_enabled': False,
     'rweb_ssp_ads_refresh_enabled': True,
     'rweb_starter_packs_topics_tab_enabled': False,
     'rweb_timeline_inline_show_more_enabled': True,
@@ -3006,7 +3008,7 @@ BUILDTIME_DEFAULT_FEATURE_SWITCHES = {
     'subscriptions_offers_dynamic_upsells_enabled': True,
     'subscriptions_offers_in_tier_switch_enabled': False,
     'subscriptions_offers_localized_pricing_enabled': False,
-    'subscriptions_offers_premium_nav_indicator_enabled': True,
+    'subscriptions_offers_premium_nav_indicator_enabled': False,
     'subscriptions_offers_special_perk_enabled': False,
     'subscriptions_offers_upgrade_offer_home_nav_upsell_enabled': False,
     'subscriptions_offers_upgrade_offer_sidebar_upsell_enabled': False,
@@ -3047,7 +3049,7 @@ BUILDTIME_DEFAULT_FEATURE_SWITCHES = {
     'subscriptions_upsells_post_analytics_promo_variant_enabled': False,
     'subscriptions_upsells_post_details_analytics_enabled': True,
     'subscriptions_upsells_post_engagements_enabled': False,
-    'subscriptions_upsells_premium_home_nav_promo_variant_enabled': True,
+    'subscriptions_upsells_premium_home_nav_promo_variant_enabled': False,
     'subscriptions_upsells_premium_nav_migration_enabled': False,
     'subscriptions_upsells_profile_card_enabled': False,
     'subscriptions_upsells_profile_sidebar_analytics_upsell_enabled': False,
@@ -3295,12 +3297,15 @@ BUILDTIME_DEFAULT_FEATURE_SWITCHES = {
     'payments_support_xchat_sessions_enabled': True,
     'responsive_web_android_quick_promote_stripe_elements_enabled': False,
     'rweb_cashtags_composer_attachment_size_customization_enabled': True,
-    'subscriptions_offers_go_for_launch_copy_enabled': True,
+    'subscriptions_offers_go_for_launch_copy_enabled': False,
     'responsive_web_notifications_refresher_enabled': False,
     'web_video_teardown_listener_fix_enabled': False,
     'xchat_enable_message_request_ui_v3': False,
-    'xchat_media_download_io_batching_enabled': False,
-    'xchat_media_upload_io_batching_enabled': False,
+    'xchat_media_download_io_batching_enabled': True,
+    'xchat_media_upload_io_batching_enabled': True,
     'xchat_plaintext_grok_enabled': False,
-    'xchat_url_preview_v2_enabled': True
+    'xchat_url_preview_v2_enabled': True,
+    'rweb_home_jot_context_enabled': False,
+    'web_video_persist_bandwidth_estimate_enabled': False,
+    'xai_profile_redirect_enabled': False
 }

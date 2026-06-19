@@ -69,6 +69,9 @@ def validate_feature_switches(data):
 
 
 class GQLCache:
+    """
+    GraphQL API endpoint cache
+    """
     def __init__(self, cache_dir: str | Path | None = None) -> None:
         if cache_dir is None:
             cache_dir = default_dir

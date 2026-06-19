@@ -45,6 +45,9 @@ class GQLEndpointsManager:
         logger.info('Data extracted and updated from html.')
 
     def extract_html(self, html):
+        """
+        Extracts __INITIAL_STATE__, JSfile hashes, main.js from the html.
+        """
         html_extractor = HTMLExtractor(html)
         self.initial_state = html_extractor.extract_initial_state()
         self.js_hash_mapping = html_extractor.extract_js_hash_mapping()
@@ -96,6 +99,10 @@ class GQLEndpointsManager:
             yield await i
 
     def handle_missing_endpoint(self, name):
+        """
+        Handles missing endpoint.
+        A cached endpoint or the buildtime endpoint is used.
+        """
         current_endpoint = self.state.endpoints.get(name)
         if current_endpoint:
             logger.info(f'"{name}" not found. Using current data instead.')
@@ -148,6 +155,9 @@ class GQLEndpointsManager:
             self.cache_data()
 
     def cache_data(self):
+        """
+        Caches endpoints and features.
+        """
         hash_mapping = self.state.hash_mapping
         endpoints = [e.as_dict() for e in self.state.endpoints.values()]
         feature_switches = self.state.feature_switches
@@ -159,6 +169,9 @@ class GQLEndpointsManager:
             self.cache.cache_feature_switches(feature_switches)
 
     def get_feature_switches(self):
+        """
+        Returns feature switches in __INITIAL_STATE__ as k:v dict.
+        """
         initial_state = self.initial_state
         if initial_state is None:
             return
